@@ -1,0 +1,24 @@
+defaults:
+  - data: data
+  - _self_
+
+seed: 42
+track: rgb  # rgb | depth | cross
+
+data:
+  eval_csv: data/DB_extracted/train_labels.csv
+  val_mode: train
+
+model:
+  embedding_size: 128
+  lr: 1e-3
+  margin: 0.25
+  rgb_layers_not_frozen: 4
+
+trainer:
+  max_epochs: 20
+  accelerator: auto
+  devices: 1
+  log_every_n_steps: 10
+  enable_checkpointing: true
+  precision: 32
