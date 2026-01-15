@@ -14,7 +14,10 @@ def get_args():
     parser.add_argument(
         "--secret-map",
         default="data/DB_extracted/test_secret_map.csv",
-        help="CSV mapping public gallery_id to true person_id and metadata",
+        help=(
+            "CSV mapping gallery_id to true person_id and metadata. "
+            "Accepts the test secret map (public_gallery_id) or a labeled train/valid CSV (gallery_id)."
+        ),
     )
     parser.add_argument("--k", nargs="+", type=int, default=[1, 5, 10], help="CMC cutoffs")
     parser.add_argument(
@@ -27,17 +30,31 @@ def get_args():
     return parser.parse_args()
 
 
-def load_secret_map(path: str) -> Dict[str, Dict[str, str]]:
-    meta = {}
+def load_meta(path: str) -> Dict[str, Dict[str, str]]:
+    meta: Dict[str, Dict[str, str]] = {}
     with open(path, newline="") as f:
         reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames or []
+        if "public_gallery_id" in fieldnames:
+            id_col = "public_gallery_id"
+        elif "gallery_id" in fieldnames:
+            id_col = "gallery_id"
+        else:
+            raise ValueError(
+                "Labels CSV must contain 'public_gallery_id' (test secret map) or 'gallery_id' (train/valid labels)."
+            )
+        required = {"person_id", "cam_name", "passage_name"}
+        missing = required - set(fieldnames)
+        if missing:
+            raise ValueError(f"Labels CSV missing required columns for scoring: {sorted(missing)}")
+
         for row in reader:
-            meta[row["public_gallery_id"]] = {
+            meta[row[id_col]] = {
                 "person_id": row["person_id"],
                 "cam_name": row.get("cam_name", ""),
                 "passage_name": row.get("passage_name", ""),
                 "passage_id": row.get("passage_id", ""),
-                "orig_path": row.get("orig_path", ""),
+                "orig_path": row.get("orig_path", row.get("path", "")),
             }
     return meta
 
@@ -150,7 +167,7 @@ def compute_metrics(rows: List[Dict[str, str]], meta: Dict[str, Dict[str, str]],
 
 def main():
     args = get_args()
-    meta = load_secret_map(args.secret_map)
+    meta = load_meta(args.secret_map)
     rankings = load_rankings(args.rankings)
     for scenario in args.scenarios:
         rows = filter_and_rerank(rankings, meta, scenario)

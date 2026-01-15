@@ -23,6 +23,11 @@ def get_args():
     parser.add_argument("--track", choices=TRACKS.keys(), default="rgb")
     parser.add_argument("--data-root", default="data/DB_extracted", help="Root dataset directory")
     parser.add_argument("--labels-csv", default="data/DB_extracted/public_test_labels.csv", help="Public test CSV")
+    parser.add_argument(
+        "--eval-subdir",
+        default=None,
+        help="Override eval subdirectory (e.g., 'train' for a personal valid split)",
+    )
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--num-workers", type=int, default=4)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
@@ -58,8 +63,15 @@ def embed_dataset(
     query_embeds = []
     gallery_embeds = []
 
+    def _coerce_ids(batch_ids) -> List[str]:
+        if isinstance(batch_ids, torch.Tensor):
+            if batch_ids.ndim == 0:
+                return [str(batch_ids.item())]
+            return [str(x) for x in batch_ids.tolist()]
+        return [str(x) for x in batch_ids]
+
     for batch in tqdm(loader, desc="Embedding test set"):
-        ids.extend(batch["gallery_id"])
+        ids.extend(_coerce_ids(batch["gallery_id"]))
         paths.extend(batch["path"])
 
         # batch entries are lists of tensors; stack them
@@ -125,6 +137,8 @@ def main():
     )
     if args.sequence_length is not None:
         data_cfg.sequence.length = args.sequence_length
+    if args.eval_subdir is not None:
+        data_cfg.eval_subdir = args.eval_subdir
 
     rgb_t, depth_t = build_transforms(data_cfg.transforms)
     dataset = UnifiedReIDDataset(

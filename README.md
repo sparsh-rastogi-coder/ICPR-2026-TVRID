@@ -87,11 +87,19 @@ Each CSV must contain columns:
 `query_gallery_id, query_path, gallery_id, gallery_path, rank, distance`.
 
 ## Local evaluation
-For sanity checks on your own labeled splits (e.g., derived from `train_labels.csv`), you can reuse the scorer.
+For sanity checks on your own labeled splits (e.g., derived from `train_labels.csv`), use this two-step workflow.
+The example below is for the RGB track, but you can adapt it for Depth and Cross by switching `--track` and output names.
 
-In this context, `--secret-map` should point to the labeled CSV corresponding to your evaluation split (e.g., your `valid_split.csv`):
+1) Generate rankings on your validation split (stored under `train/` by default):
 ```bash
-python eval_score.py --rankings outputs/rankings_rgb.csv --secret-map data/DB_extracted/valid_split.csv
+python eval_generate.py --checkpoint baselines_weights/rgb_weights.ckpt --track rgb \
+  --data-root data/DB_extracted --labels-csv data/DB_extracted/valid_split.csv \
+  --eval-subdir train --output outputs/rankings_rgb_valid.csv
+```
+
+2) Score those rankings against the same labeled CSV:
+```bash
+python eval_score.py --rankings outputs/rankings_rgb_valid.csv --secret-map data/DB_extracted/valid_split.csv
 ```
 
 The official Codabench evaluation uses hidden test labels; your submissions are scored server-side with the same `bundle/scoring_program/scoring.py`, producing `scores.json`, `detailed_results.html`, and the primary `overallMap`.
