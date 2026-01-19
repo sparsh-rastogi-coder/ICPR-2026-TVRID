@@ -9,7 +9,7 @@ Tracks:
 - Depth Re-ID (privacy-preserving)
 - Cross-modal RGB↔Depth retrieval
 
-Competition page: https://www.codabench.org/competitions/12200/#/pages-tab
+Competition page: https://www.codabench.org/competitions/12315/
 
 ## Data download and layout
 - Download from Zenodo: https://zenodo.org/records/17909410 (DOI: 10.5281/zenodo.17909410). Two zips are provided:
